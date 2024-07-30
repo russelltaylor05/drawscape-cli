@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "drawscape"
+version = "0.1.0"
+description = "A simple image processing tool"
+authors = ["Your Name <you@example.com>"]
+packages = [
+    { include = "drawscape", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.25.1"
+Pillow = "^8.1.0"
+python-dotenv = "^0.19.2"
+
+[tool.poetry.scripts]
+drawscape = "drawscape.main:main"
