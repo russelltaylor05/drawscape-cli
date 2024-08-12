@@ -135,3 +135,9 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# Examples folder
+examples/
+
+# macOS system files
+.DS_Store
