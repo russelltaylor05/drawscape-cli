@@ -47,6 +47,7 @@ def main():
     parser = argparse.ArgumentParser(description='Image processing tool')
     parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize'], help='Action to perform')
     parser.add_argument('--image', help='Path to the image file')
+    parser.add_argument('--json', help='Path to the JSON file for template action')
 
     args = parser.parse_args()
 
@@ -64,7 +65,9 @@ def main():
                 raise ValueError("--image argument is required for svglines action")
             svglines(args.image)
         elif args.action == 'template':
-            template()
+            if not args.json:
+                raise ValueError("--json argument is required for template action")
+            template(args.json)
         elif args.action == 'optimize':
             if not args.image:
                 raise ValueError("--image argument is required for optimize action")
