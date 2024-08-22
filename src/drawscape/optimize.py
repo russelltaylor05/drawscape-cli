@@ -1,5 +1,6 @@
 import os
 import subprocess
+import xml.etree.ElementTree as ET
 
 def optimize_svg(input_svg_path):
     print(f"Optimizing SVG file: {input_svg_path}")

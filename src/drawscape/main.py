@@ -9,6 +9,8 @@ import argparse
 from .svg_utils import svglines
 from .template import template
 from .optimize import optimize_svg
+from .details import parse_svg_file
+from .convert import convert_svg
 
 load_dotenv()
 
@@ -45,7 +47,7 @@ def remove_background(image_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Image processing tool')
-    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize'], help='Action to perform')
+    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize', 'svgdetails', 'convert'], help='Action to perform')
     parser.add_argument('--image', help='Path to the image file')
     parser.add_argument('--json', help='Path to the JSON file for template action')
 
@@ -72,6 +74,23 @@ def main():
             if not args.image:
                 raise ValueError("--image argument is required for optimize action")
             optimize_svg(args.image)
+        elif args.action == 'svgdetails':
+            if not args.image:
+                raise ValueError("--image argument is required for svgdetails action")
+            details = parse_svg_file(args.image)
+            if details:
+                print("SVG Details:")
+                print(f"Width: {details['width']}")
+                print(f"Height: {details['height']}")
+                print(f"ViewBox: {details['viewBox']}")
+                print(f"Bounding Box: {details['bounding_box']}")
+                print(f"Content length: {len(details['content'])} characters")
+            else:
+                print("Failed to parse SVG file.")
+        elif args.action == 'convert':
+            if not args.image:
+                raise ValueError("--image argument is required for convert action")
+            convert_svg(args.image)
             
     except TypeError as e:
         print(f"Error: {e}. Please provide a valid input file path.")
