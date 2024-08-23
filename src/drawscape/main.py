@@ -11,6 +11,8 @@ from .template import template
 from .optimize import optimize_svg
 from .details import parse_svg_file
 from .convert import convert_svg
+from .shipping import create_shipping_label
+from .vase import vase
 
 load_dotenv()
 
@@ -47,9 +49,10 @@ def remove_background(image_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Image processing tool')
-    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize', 'svgdetails', 'convert'], help='Action to perform')
+    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize', 'svgdetails', 'convert', 'shipping', 'vase'], help='Action to perform')
     parser.add_argument('--image', help='Path to the image file')
-    parser.add_argument('--json', help='Path to the JSON file for template action')
+    parser.add_argument('--json', help='Path to the JSON file for template or shipping action')
+    parser.add_argument('--output', help='Output path for shipping label')
 
     args = parser.parse_args()
 
@@ -91,6 +94,13 @@ def main():
             if not args.image:
                 raise ValueError("--image argument is required for convert action")
             convert_svg(args.image)
+        elif args.action == 'shipping':
+            if not args.json:
+                raise ValueError("--json argument is required for shipping action")
+            output_path = args.output if args.output else 'shipping_label.svg'
+            create_shipping_label(args.json, output_path)
+        elif args.action == 'vase':
+            print_vase()
             
     except TypeError as e:
         print(f"Error: {e}. Please provide a valid input file path.")
