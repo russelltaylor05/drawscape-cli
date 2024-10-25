@@ -7,12 +7,12 @@ from dotenv import load_dotenv
 import argparse
 
 from .svg_utils import svglines
-from .template import template
+from .blueprint import blueprint
 from .optimize import optimize_svg
 from .details import parse_svg_file
 from .convert import convert_svg
 from .shipping import create_shipping_label
-from .vase import vase
+from .split import split_svg
 
 load_dotenv()
 
@@ -49,10 +49,12 @@ def remove_background(image_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Image processing tool')
-    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'template', 'optimize', 'svgdetails', 'convert', 'shipping', 'vase'], help='Action to perform')
+    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'blueprint', 'optimize', 'svgdetails', 'convert', 'shipping', 'vase', 'split'], help='Action to perform')
     parser.add_argument('--image', help='Path to the image file')
-    parser.add_argument('--json', help='Path to the JSON file for template or shipping action')
+    parser.add_argument('--json', help='Path to the JSON file for blueprint or shipping action')
     parser.add_argument('--output', help='Output path for shipping label')
+    parser.add_argument('--size', choices=['a4', 'a3', 'letter', 'tabloid'], help='Size for blueprint action (optional)')
+    parser.add_argument('--orientation', choices=['portrait', 'landscape'], default='portrait', help='Orientation for blueprint action (optional)')
 
     args = parser.parse_args()
 
@@ -69,10 +71,10 @@ def main():
             if not args.image:
                 raise ValueError("--image argument is required for svglines action")
             svglines(args.image)
-        elif args.action == 'template':
+        elif args.action == 'blueprint':
             if not args.json:
-                raise ValueError("--json argument is required for template action")
-            template(args.json)
+                raise ValueError("--json argument is required for blueprint action")
+            blueprint(args.json, args.size, args.orientation)
         elif args.action == 'optimize':
             if not args.image:
                 raise ValueError("--image argument is required for optimize action")
@@ -101,6 +103,10 @@ def main():
             create_shipping_label(args.json, output_path)
         elif args.action == 'vase':
             print_vase()
+        elif args.action == 'split':
+            if not args.image:
+                raise ValueError("--image argument is required for split action")
+            split_svg(args.image)
             
     except TypeError as e:
         print(f"Error: {e}. Please provide a valid input file path.")

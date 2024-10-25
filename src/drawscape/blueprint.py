@@ -4,55 +4,107 @@ from HersheyFonts import HersheyFonts
 import xml.etree.ElementTree as ET
 import re
 
-# Constants (all measurements in millimeters unless otherwise specified)
-
-# Document
-DOCUMENT_WIDTH = 210
-DOCUMENT_HEIGHT = 297
-
-# Border
-BORDER_INSET = 8
-BORDER_WIDTH = DOCUMENT_WIDTH - (2 * BORDER_INSET)
-BORDER_HEIGHT = DOCUMENT_HEIGHT - (2 * BORDER_INSET)
-BORDER_STROKE_WIDTH = "0.6"
-
-# Legend
-LEGEND_START_X = BORDER_INSET + 5
-LEGEND_START_Y = BORDER_INSET + 5
-LEGEND_CELL_HEIGHT = 6
-LEGEND_STROKE_WIDTH = "0.4"
-
-# Titles
-TITLE_SCALE_FACTOR = 0.3
-SUBTITLE_SCALE_FACTOR = 0.2
-TITLE_RIGHT_MARGIN = 15
-SUBTITLE_RIGHT_MARGIN = 15
-TITLE_STROKE_WIDTH = "0.5"
-
-# Text
-TEXT_STROKE_WIDTH = "0.6"
 
 
-def template(json_file_path):
-    
+# Paper sizes in millimeters (width, height)
+PAPER_SIZES = {
+    'a3': (297, 420),
+    'a4': (210, 297),
+    'letter': (216, 279),
+    'tabloid': (279, 432)
+}
+
+
+def blueprint(json_file_path, size, orientation='portrait'):
+
     # Load data from JSON file
     with open(json_file_path, 'r') as f:
         data = json.load(f)
 
-    # Load SVG data from the file specified in the JSON
-    svg_file_path = data.get('SVG', '')
-    svg_data, svg_width, svg_height, svg_units = load_svg_data(svg_file_path)
-
-    print(svg_width, svg_height, svg_units)
+    # Determine which function to use based on size
+    svg_content = container(size, data, orientation)
     
-    # Extract title, subtitle, and specifications from JSON data
-    title_text = data.get('title', '')
-    subtitle_text = data.get('subtitle', '')
-    sailboat_specs = [{'name': spec['label'], 'detail': spec['detail']} for spec in data.get('specifications', [])]
+    # Generate output file path
+    output_dir = os.getcwd()  # Current working directory
+    
+    # Create the new output filename
+    output_filename = "blueprint.svg"
+    output_path = os.path.join(output_dir, output_filename)
+    
+    # Save SVG content to file
+    with open(output_path, 'w') as f:
+        f.write(svg_content)
+    
+    print(f"SVG template with Border, legend, title, subtitle saved to {output_path}")
+    
+    return output_path
 
+
+def container(size, json_data, orientation):
+    
     thefont = HersheyFonts()
     thefont.load_default_font('futural')
 
+    if size in PAPER_SIZES:
+        DOCUMENT_WIDTH, DOCUMENT_HEIGHT = PAPER_SIZES[size]
+    else:
+        print("Cannot find the specified paper size. Defaulting to A4 size.")
+        DOCUMENT_WIDTH, DOCUMENT_HEIGHT = PAPER_SIZES['a4']
+
+    # Swap document width and height if orientation is landscape
+    if orientation.lower() == 'landscape':
+        DOCUMENT_WIDTH, DOCUMENT_HEIGHT = DOCUMENT_HEIGHT, DOCUMENT_WIDTH
+
+    if size in ['a3', 'tabloid']:
+        # Constants for A3 and Tabloid
+        BORDER_INSET = 8
+        INTERNAL_PADDING = 8
+        
+        LEGEND_CELL_HEIGHT = 8
+        LEGEND_PADDING = 10
+        LEGEND_TEXT_SCALE_FACTOR = 0.13
+
+        # Titles
+        TITLE_SCALE_FACTOR = 0.5
+        SUBTITLE_SCALE_FACTOR = 0.4
+        
+    else:
+        # Constants for A4 and Letter
+        BORDER_INSET = 6
+        INTERNAL_PADDING = 6
+        
+        LEGEND_CELL_HEIGHT = 6
+        LEGEND_PADDING = 8
+        LEGEND_TEXT_SCALE_FACTOR = 0.1
+
+        # Titles
+        TITLE_SCALE_FACTOR = 0.3
+        SUBTITLE_SCALE_FACTOR = 0.2
+        
+
+    TITLE_RIGHT_MARGIN = BORDER_INSET + INTERNAL_PADDING + 1
+    SUBTITLE_RIGHT_MARGIN = BORDER_INSET + INTERNAL_PADDING + 1
+
+    #Stroke Widths
+    TITLE_STROKE_WIDTH = "0.75"
+    TEXT_STROKE_WIDTH = "0.9"
+    BORDER_STROKE_WIDTH = "0.9"
+    LEGEND_STROKE_WIDTH = "0.6"
+
+    #Border Dimensions
+    BORDER_WIDTH = DOCUMENT_WIDTH - (2 * BORDER_INSET)
+    BORDER_HEIGHT = DOCUMENT_HEIGHT - (2 * BORDER_INSET)
+    
+    #Legend Dimensions
+    LEGEND_START_X = BORDER_INSET + INTERNAL_PADDING
+    LEGEND_START_Y = BORDER_INSET + INTERNAL_PADDING
+        
+
+    # Extract title, subtitle, and specifications from JSON data
+    title_text = json_data.get('title', '').upper()
+    subtitle_text = json_data.get('subtitle', '')
+    legend_details = [{'name': spec['label'], 'detail': spec['detail']} for spec in json_data.get('specifications', [])]
+    
     # Start SVG content with XML declaration and dimensions with viewBox
     svg_content = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'
     svg_content += f'<svg width="{DOCUMENT_WIDTH}mm" height="{DOCUMENT_HEIGHT}mm" viewBox="0 0 {DOCUMENT_WIDTH} {DOCUMENT_HEIGHT}" xmlns="http://www.w3.org/2000/svg">\n'
@@ -60,7 +112,7 @@ def template(json_file_path):
     # Add a group for border elements
     svg_content += '  <g id="borders">\n'
     
-    # Add a 1pt Border rectangle inset 8 from the edges using a path element
+    # Add a 1pt Border rectangle from the edges using a path element
     svg_content += f'    <path d="M {BORDER_INSET} {BORDER_INSET} H {BORDER_INSET + BORDER_WIDTH} V {BORDER_INSET + BORDER_HEIGHT} H {BORDER_INSET} Z" fill="none" stroke="black" stroke-width="{BORDER_STROKE_WIDTH}" id="Border" />\n'
     svg_content += f'    <path d="M {BORDER_INSET} {BORDER_INSET} V {BORDER_INSET + BORDER_HEIGHT} H {BORDER_INSET + BORDER_WIDTH} V {BORDER_INSET} Z" fill="none" stroke="black" stroke-width="{BORDER_STROKE_WIDTH}" id="ReversedBorder" />\n'
     
@@ -70,7 +122,7 @@ def template(json_file_path):
     # Calculate the width of the widest label name and label detail
     max_name_width = float('-inf')
     max_detail_width = float('-inf')
-    for spec in sailboat_specs:
+    for spec in legend_details:
         # Calculate bounding box for name
         min_x, max_x = float('inf'), float('-inf')
         for line in thefont.lines_for_text(spec["name"]):
@@ -90,12 +142,12 @@ def template(json_file_path):
         max_detail_width = max(max_detail_width, detail_width)
 
     # Calculate the legend width based on the widest text with increased padding
-    name_column_width = max_name_width * 0.1 + 8  # Scale factor 0.1, plus 8 for padding
-    detail_column_width = max_detail_width * 0.1 + 8  # Scale factor 0.1, plus 8 for padding
+    name_column_width = max_name_width * LEGEND_TEXT_SCALE_FACTOR + LEGEND_PADDING  # Scale factor 0.1, plus 8 for padding
+    detail_column_width = max_detail_width * LEGEND_TEXT_SCALE_FACTOR + LEGEND_PADDING  # Scale factor 0.1, plus 8 for padding
     legend_width = name_column_width + detail_column_width
 
     # Recalculate legend dimensions
-    legend_height = len(sailboat_specs) * LEGEND_CELL_HEIGHT  # Adjusted for dynamic number of rows
+    legend_height = len(legend_details) * LEGEND_CELL_HEIGHT  # Adjusted for dynamic number of rows
 
     # Add 2 column legend outline with labels
     svg_content += f'  <g id="legend" fill="none" stroke="black" stroke-width="{LEGEND_STROKE_WIDTH}">\n'
@@ -105,33 +157,39 @@ def template(json_file_path):
     svg_content += f'    <line id="legend-column-divider" x1="{LEGEND_START_X + name_column_width}" y1="{LEGEND_START_Y}" x2="{LEGEND_START_X + name_column_width}" y2="{LEGEND_START_Y + legend_height}" />\n'
     
     # Add horizontal lines for rows and text for specifications
-    for i, spec in enumerate(sailboat_specs):
+    for i, spec in enumerate(legend_details):
         y = LEGEND_START_Y + i * LEGEND_CELL_HEIGHT
         svg_content += f'    <line id="legend-row-divider-{i}" x1="{LEGEND_START_X}" y1="{y + LEGEND_CELL_HEIGHT}" x2="{LEGEND_START_X + legend_width}" y2="{y + LEGEND_CELL_HEIGHT}" />\n'
         text_y = y + (LEGEND_CELL_HEIGHT / 2)  # Vertically center the text
         
-        svg_content += f'    <g id="legend-label-{i}-name" transform="translate({LEGEND_START_X + 2}, {text_y}) scale(0.1)">\n'
+        svg_content += f'    <g id="legend-label-{i}-name" transform="translate({LEGEND_START_X + 2}, {text_y}) scale({LEGEND_TEXT_SCALE_FACTOR})">\n'
         for line in thefont.lines_for_text(spec["name"]):
             path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
             svg_content += f'      <path d="{path_data}" fill="none" stroke="black" stroke-width="{TEXT_STROKE_WIDTH}" />\n'
         svg_content += '    </g>\n'
         
-        svg_content += f'    <g id="legend-label-{i}-detail" transform="translate({LEGEND_START_X + name_column_width + 2}, {text_y}) scale(0.1)">\n'
+        svg_content += f'    <g id="legend-label-{i}-detail" transform="translate({LEGEND_START_X + name_column_width + 2}, {text_y}) scale({LEGEND_TEXT_SCALE_FACTOR})">\n'
         for line in thefont.lines_for_text(spec["detail"]):
             path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
             svg_content += f'      <path d="{path_data}" fill="none" stroke="black" stroke-width="{TEXT_STROKE_WIDTH}" />\n'
         svg_content += '    </g>\n'
 
     svg_content += '  </g>\n'
+
     
+    # baseline letter heigh calculations
+    heightcalc = get_text_bounding_box("R", thefont) # letters belwo the line (y, g, etc) mess up the calc when using lowercase. We are currenlty forcing uppercase.
+    title_height = heightcalc['height']
+
     """
     Title
     """
-    title_bbox = get_text_bounding_box(title_text, thefont)
-    title_width = title_bbox['width']
-    title_height = title_bbox['height']
+    title_box = get_text_bounding_box(title_text, thefont)
+    title_width = title_box['width']
+
     title_translate_x = DOCUMENT_WIDTH - (title_width * TITLE_SCALE_FACTOR) - TITLE_RIGHT_MARGIN
-    svg_content += f'  <g id="title" transform="translate({title_translate_x}, {title_height - 3}) scale({TITLE_SCALE_FACTOR})">\n'
+    title_translate_y =  ((title_height / 2) * TITLE_SCALE_FACTOR) + BORDER_INSET + INTERNAL_PADDING
+    svg_content += f'  <g id="title" transform="translate({title_translate_x}, {title_translate_y}) scale({TITLE_SCALE_FACTOR})">\n'
     for line in thefont.lines_for_text(title_text):
         title_path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
         svg_content += f'    <path d="{title_path_data}" fill="none" stroke="black" stroke-width="{TITLE_STROKE_WIDTH}" />\n'
@@ -140,57 +198,21 @@ def template(json_file_path):
     """
     Sub Title
     """
-    subtitle_bbox = get_text_bounding_box(subtitle_text, thefont)    
-    subtitle_width = subtitle_bbox['width']
+    subtitle_box = get_text_bounding_box(subtitle_text, thefont)    
+    subtitle_width = subtitle_box['width']
     subtitle_translate_x = DOCUMENT_WIDTH - (subtitle_width * SUBTITLE_SCALE_FACTOR) - SUBTITLE_RIGHT_MARGIN
-    subtitle_translate_y = title_height + 9 
+    subtitle_translate_y = ((title_height / 2) * SUBTITLE_SCALE_FACTOR) + (title_height * TITLE_SCALE_FACTOR) + BORDER_INSET + INTERNAL_PADDING + INTERNAL_PADDING
     svg_content += f'  <g id="subtitle" transform="translate({subtitle_translate_x}, {subtitle_translate_y}) scale({SUBTITLE_SCALE_FACTOR})">\n'
     for line in thefont.lines_for_text(subtitle_text):
         path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
         svg_content += f'    <path d="{path_data}" fill="none" stroke="black" stroke-width="{TITLE_STROKE_WIDTH}" />\n'
     svg_content += '  </g>\n'
 
-    # Calculate the center of the document
-    center_x = DOCUMENT_WIDTH / 2
-    center_y = DOCUMENT_HEIGHT / 2
-    
-    # Calculate the scale factor to fit the SVG content inside the document
-    scale_x = (BORDER_WIDTH - 10) / svg_width  # 10mm margin
-    scale_y = (BORDER_HEIGHT - 10) / svg_height  # 10mm margin
-    scale_factor = min(scale_x, scale_y)
-
-    # Calculate the position to center the SVG content
-    translate_x = center_x - (svg_width * scale_factor / 2)
-    translate_y = center_y - (svg_height * scale_factor / 2)
-
-    # Add the SVG content to the middle of the document
-    if svg_data:
-        svg_content += f'  <g id="inserted_svg">\n'
-        svg_content += svg_data
-        svg_content += '  </g>\n'
 
     # Close the SVG tag
     svg_content += '</svg>\n'
-    
-    # Generate output file path
-    output_dir = os.getcwd()  # Current working directory
-    # Extract the filename from the SVG path
-    svg_filename = os.path.basename(svg_file_path)
-    # Remove the extension
-    svg_filename_without_ext = os.path.splitext(svg_filename)[0]
-    # Create the new output filename
-    output_filename = f"{svg_filename_without_ext}_template.svg"
-    output_path = os.path.join(output_dir, output_filename)
-    
-    # Save SVG content to file
-    with open(output_path, 'w') as f:
-        f.write(svg_content)
-    
-    print(f"SVG template with Border, legend, title, subtitle saved to {output_path}")
-    
-    return output_path, svg_units
 
-
+    return svg_content
 
 
 # This function loads SVG data from a file and returns the SVG content as a string,
@@ -234,6 +256,8 @@ def load_svg_data(svg_file_path):
         svg_content = re.sub(r'<\?xml.*?\?>', '', svg_content)
         svg_content = re.sub(r'<svg.*?>', '', svg_content)
         svg_content = re.sub(r'</svg>', '', svg_content)
+
+        print(width_value, height_value, units)
 
         return svg_content.strip(), width_value, height_value, units
 

@@ -16,5 +16,5 @@ To install Drawscape, clone this repository and run:
 
 
 ```
-pip3 installe -e .
+pip3 install -e .
 ```
