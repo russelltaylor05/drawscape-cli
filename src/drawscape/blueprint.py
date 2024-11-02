@@ -11,7 +11,7 @@ PAPER_SIZES = {
     'a3': (297, 420),
     'a4': (210, 297),
     'letter': (216, 279),
-    'tabloid': (279, 432)
+    'tabloid': (279.4, 431.8)
 }
 
 
@@ -57,7 +57,7 @@ def container(size, json_data, orientation):
 
     if size in ['a3', 'tabloid']:
         # Constants for A3 and Tabloid
-        BORDER_INSET = 8
+        BORDER_INSET = 10
         INTERNAL_PADDING = 8
         
         LEGEND_CELL_HEIGHT = 8
@@ -66,11 +66,11 @@ def container(size, json_data, orientation):
 
         # Titles
         TITLE_SCALE_FACTOR = 0.5
-        SUBTITLE_SCALE_FACTOR = 0.4
+        SUBTITLE_SCALE_FACTOR = 0.35
         
     else:
         # Constants for A4 and Letter
-        BORDER_INSET = 6
+        BORDER_INSET = 8
         INTERNAL_PADDING = 6
         
         LEGEND_CELL_HEIGHT = 6
@@ -88,7 +88,7 @@ def container(size, json_data, orientation):
     #Stroke Widths
     TITLE_STROKE_WIDTH = "0.75"
     TEXT_STROKE_WIDTH = "0.9"
-    BORDER_STROKE_WIDTH = "0.9"
+    BORDER_STROKE_WIDTH = "0.8"
     LEGEND_STROKE_WIDTH = "0.6"
 
     #Border Dimensions
