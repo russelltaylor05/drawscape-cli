@@ -45,11 +45,15 @@ def container(size, json_data, orientation):
     thefont = HersheyFonts()
     thefont.load_default_font('futural')
 
+    # Default to tabloid size if no size specified
+    if not size:
+        size = 'tabloid'
+
     if size in PAPER_SIZES:
         DOCUMENT_WIDTH, DOCUMENT_HEIGHT = PAPER_SIZES[size]
     else:
-        print("Cannot find the specified paper size. Defaulting to A4 size.")
-        DOCUMENT_WIDTH, DOCUMENT_HEIGHT = PAPER_SIZES['a4']
+        print("Cannot find the specified paper size. Defaulting to tabloid size.")
+        DOCUMENT_WIDTH, DOCUMENT_HEIGHT = PAPER_SIZES['tabloid']
 
     # Swap document width and height if orientation is landscape
     if orientation.lower() == 'landscape':
@@ -57,7 +61,7 @@ def container(size, json_data, orientation):
 
     if size in ['a3', 'tabloid']:
         # Constants for A3 and Tabloid
-        BORDER_INSET = 10
+        BORDER_INSET = 12
         INTERNAL_PADDING = 8
         
         LEGEND_CELL_HEIGHT = 8
@@ -111,6 +115,7 @@ def container(size, json_data, orientation):
     
     # Add a group for border elements
     svg_content += '  <g id="borders">\n'
+    svg_content += '    <title>Borders</title>\n'
     
     # Add a 1pt Border rectangle from the edges using a path element
     svg_content += f'    <path d="M {BORDER_INSET} {BORDER_INSET} H {BORDER_INSET + BORDER_WIDTH} V {BORDER_INSET + BORDER_HEIGHT} H {BORDER_INSET} Z" fill="none" stroke="black" stroke-width="{BORDER_STROKE_WIDTH}" id="Border" />\n'
@@ -151,6 +156,7 @@ def container(size, json_data, orientation):
 
     # Add 2 column legend outline with labels
     svg_content += f'  <g id="legend" fill="none" stroke="black" stroke-width="{LEGEND_STROKE_WIDTH}">\n'
+    svg_content += f'    <title>Legend</title>\n'
     svg_content += f'    <rect id="legend-border" x="{LEGEND_START_X}" y="{LEGEND_START_Y}" width="{legend_width}" height="{legend_height}" />\n'
     
     # Add vertical line for columns
@@ -190,6 +196,7 @@ def container(size, json_data, orientation):
     title_translate_x = DOCUMENT_WIDTH - (title_width * TITLE_SCALE_FACTOR) - TITLE_RIGHT_MARGIN
     title_translate_y =  ((title_height / 2) * TITLE_SCALE_FACTOR) + BORDER_INSET + INTERNAL_PADDING
     svg_content += f'  <g id="title" transform="translate({title_translate_x}, {title_translate_y}) scale({TITLE_SCALE_FACTOR})">\n'
+    svg_content += f'    <title>Title</title>\n'
     for line in thefont.lines_for_text(title_text):
         title_path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
         svg_content += f'    <path d="{title_path_data}" fill="none" stroke="black" stroke-width="{TITLE_STROKE_WIDTH}" />\n'
@@ -203,11 +210,15 @@ def container(size, json_data, orientation):
     subtitle_translate_x = DOCUMENT_WIDTH - (subtitle_width * SUBTITLE_SCALE_FACTOR) - SUBTITLE_RIGHT_MARGIN
     subtitle_translate_y = ((title_height / 2) * SUBTITLE_SCALE_FACTOR) + (title_height * TITLE_SCALE_FACTOR) + BORDER_INSET + INTERNAL_PADDING + INTERNAL_PADDING
     svg_content += f'  <g id="subtitle" transform="translate({subtitle_translate_x}, {subtitle_translate_y}) scale({SUBTITLE_SCALE_FACTOR})">\n'
+    svg_content += f'    <title>Subtitle</title>\n'
     for line in thefont.lines_for_text(subtitle_text):
         path_data = "M" + " L".join(f"{x},{y}" for x, y in line)
         svg_content += f'    <path d="{path_data}" fill="none" stroke="black" stroke-width="{TITLE_STROKE_WIDTH}" />\n'
     svg_content += '  </g>\n'
 
+    svg_content += f'  <g id="svg-content" transform="translate({subtitle_translate_x}, {subtitle_translate_y}) scale({SUBTITLE_SCALE_FACTOR})">\n'
+    svg_content += f'    <title>SVG Content</title>\n'
+    svg_content += '  </g>\n'
 
     # Close the SVG tag
     svg_content += '</svg>\n'
@@ -288,7 +299,9 @@ def get_text_bounding_box(text, thefont):
     min_y, max_y = float('inf'), float('-inf')
     
     for line in thefont.lines_for_text(text):
+        print(line)
         for x, y in line:
+            print(x, y)
             min_x = min(min_x, x)
             max_x = max(max_x, x)
             min_y = min(min_y, y)

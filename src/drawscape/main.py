@@ -8,7 +8,9 @@ import argparse
 
 from .svg_utils import svglines
 from .blueprint import blueprint
+from .blueprint_label import blueprint_label
 from .optimize import optimize_svg
+from .optimize_tabloid import optimize_tabloid
 from .details import parse_svg_file
 from .convert import convert_svg
 from .shipping import create_shipping_label
@@ -49,9 +51,10 @@ def remove_background(image_path):
 
 def main():
     parser = argparse.ArgumentParser(description='Image processing tool')
-    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'blueprint', 'optimize', 'svgdetails', 'convert', 'shipping', 'vase', 'split'], help='Action to perform')
+    parser.add_argument('action', choices=['removebg', 'trim', 'svglines', 'blueprint', 'blueprint-label', 'optimize', 'optimize-tabloid', 'svgdetails', 'convert', 'shipping', 'vase', 'split'], help='Action to perform')
     parser.add_argument('--image', help='Path to the image file')
     parser.add_argument('--json', help='Path to the JSON file for blueprint or shipping action')
+    parser.add_argument('--svg', help='Path to the SVG file for blueprint-label action')
     parser.add_argument('--output', help='Output path for shipping label')
     parser.add_argument('--size', choices=['a4', 'a3', 'letter', 'tabloid'], help='Size for blueprint action (optional)')
     parser.add_argument('--orientation', choices=['portrait', 'landscape'], default='portrait', help='Orientation for blueprint action (optional)')
@@ -75,10 +78,18 @@ def main():
             if not args.json:
                 raise ValueError("--json argument is required for blueprint action")
             blueprint(args.json, args.size, args.orientation)
+        elif args.action == 'blueprint-label':
+            if not args.json:
+                raise ValueError("--json argument is required for blueprint-label action")
+            blueprint_label(args.json, args.svg)
         elif args.action == 'optimize':
             if not args.image:
                 raise ValueError("--image argument is required for optimize action")
             optimize_svg(args.image)
+        elif args.action == 'optimize-tabloid':
+            if not args.image:
+                raise ValueError("--image argument is required for optimize-tabloid action")
+            optimize_tabloid(args.image)
         elif args.action == 'svgdetails':
             if not args.image:
                 raise ValueError("--image argument is required for svgdetails action")
